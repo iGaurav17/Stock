@@ -1,4 +1,3 @@
-# filename: stock_evaluator.py
 import yfinance as yf
 
 def evaluate_stock(ticker_symbol):
@@ -8,45 +7,66 @@ def evaluate_stock(ticker_symbol):
     print(f"\n📊 Evaluating: {info.get('shortName')} ({ticker_symbol})")
 
     try:
-        pe_ratio = info.get("trailingPE", 0)
-        roe = info.get("returnOnEquity", 0) * 100  # It's usually in decimal
-        debt_equity = info.get("debtToEquity", 0)
+        pe_ratio = info.get("trailingPE", None)
+        roe = info.get("returnOnEquity", None)
+        debt_equity = info.get("debtToEquity", None)
         market_cap = info.get("marketCap", 0)
         sector = info.get("sector", "Unknown")
 
         print(f"Sector: {sector}")
         print(f"P/E Ratio: {pe_ratio}")
-        print(f"ROE: {roe:.2f}%")
+        print(f"ROE: {roe * 100 if roe else 'N/A'}%")
         print(f"Debt to Equity: {debt_equity}")
         print(f"Market Cap: ₹{market_cap / 1e7:.2f} Cr")
 
-        # --- Scoring or Rule Based Logic ---
-        if roe > 15 and pe_ratio < 30 and debt_equity < 1:
-            print("✅ Recommendation: BUY (Strong Fundamentals)")
-            if pe_ratio < 15:
-                reason = "Undervalued with low P/E ratio"
-            elif roe > 20:
-                reason = "High return on equity (ROE)"
-            elif debt_equity < 0.5:
-                reason = "Very low debt, financially safe"
-        elif roe < 10 or debt_equity > 2:
-            print("❌ Recommendation: AVOID (Weak financials)")
-            if roe < 10:
-                reason = "Low return on equity (ROE)"
-            elif debt_equity > 2:
-                reason = "High debt-to-equity ratio"
-            elif pe_ratio > 50:
-                reason = "Overvalued based on P/E ratio"
-        else:
-            print("⚠️ Recommendation: WATCH (Moderate metrics)")
-            if 10 <= roe <= 15:
-                reason = "Average ROE, room for improvement"
-            elif 1 <= debt_equity <= 2:
-                reason = "Moderate debt levels"
-            else:
-                reason = "No clear signal, monitor performance"
+        # --- Profitability Scoring ---
+        score = 50  # base score
 
-        print(f"📌 Reason: {reason}")
+        # ROE scoring
+        if roe is not None:
+            roe *= 100
+            if roe >= 25:
+                score += 30
+            elif roe >= 15:
+                score += 20
+            elif roe >= 10:
+                score += 10
+            elif roe < 5:
+                score -= 15  # penalty for poor ROE
+
+        # PE ratio scoring
+        if pe_ratio is not None:
+            if pe_ratio < 15:
+                score += 10
+            elif 15 <= pe_ratio <= 30:
+                score += 5
+            elif pe_ratio > 50:
+                score -= 10  # overvalued
+
+        # Debt to equity scoring
+        if debt_equity is not None:
+            if debt_equity < 0.5:
+                score += 10
+            elif 0.5 <= debt_equity <= 1.5:
+                score += 5
+            elif debt_equity > 2:
+                score -= 15  # high debt risk
+
+        # Clamp score between -50 and 100
+        score = max(-50, min(score, 100))
+
+        # Convert to "profit chance" style metric
+        if score >= 70:
+            verdict = "🚀 High potential"
+        elif 40 <= score < 70:
+            verdict = "⚖️ Moderate"
+        elif 10 <= score < 40:
+            verdict = "⚠️ Risky"
+        else:
+            verdict = "❌ Avoid"
+
+        print(f"\n📈 Estimated Profitability Score: {score}% ({verdict})")
+
     except Exception as e:
         print("Error fetching data:", e)
 
@@ -54,4 +74,3 @@ def evaluate_stock(ticker_symbol):
 if __name__ == "__main__":
     ticker_input = input("Enter Indian Stock Ticker (e.g., INFY.NS): ").strip().upper()
     evaluate_stock(ticker_input)
-
