@@ -1,5 +1,6 @@
 import yfinance as yf  # Yahoo Finance API to fetch stock data
 import matplotlib.pyplot as plt
+import mplfinance as mpf
 
 # Function to evaluate a given stock based on financial ratios
 def evaluate_stock(ticker_symbol):
@@ -45,9 +46,9 @@ def evaluate_stock(ticker_symbol):
 
 
         # ✅ Add this block: fetch last 5 days history and print
-        history = stock.history(period="5d")
+        history = stock.history(period="30d")
         if not history.empty:
-            print("\n📅 Last 5 days closing prices:")
+            print("\n📅 Last 30 days closing prices:")
             print(history["Close"])
 
             # ✅ Plotting the chart
@@ -56,9 +57,30 @@ def evaluate_stock(ticker_symbol):
             plt.xlabel("Date")
             plt.grid(True)
             plt.tight_layout()
-            plt.show()
+            plt.show(block=False)
+            plt.pause(3)  # Pause for 3 seconds to allow the plot to render
         else:
             print("⚠️ No historical price data found.")
+
+
+        intraday_data = stock.history(period="1d", interval="1m")  # 1-day data with 5-minute intervals
+        if not intraday_data.empty:
+            print("\n📅 Intraday Price (1-minute intervals):")
+            print(intraday_data[["Close"]].tail())
+
+            # Plot intraday price chart
+            plt.figure(figsize=(12, 5))
+            plt.plot(intraday_data.index, intraday_data["Close"], marker='', linestyle='-', color='green')
+            plt.title(f"{ticker.upper()} - Intraday Price Movement (5-minute intervals)")
+            plt.xlabel("Time")
+            plt.ylabel("Price (INR)")
+            plt.xticks(rotation=45)
+            plt.grid(True, linestyle='--', alpha=0.5)
+            plt.tight_layout()
+            plt.show(block=False)
+            plt.pause(3)  # Pause for 3 seconds to allow the plot to render
+        else: 
+            print("⚠️ Intraday price data not available.")
 
         # --- Custom Profitability Scoring ---
         score = 50  # Start with a neutral base score
@@ -143,8 +165,9 @@ def show_chart(metrics, ticker):
         yval = bar.get_height()
         plt.text(bar.get_x() + bar.get_width()/2, yval + 0.5, f"{yval}", ha='center', va='bottom')
 
-    plt.tight_layout()
     plt.show()
+    # plt.show(block=False)
+    # plt.pause(3)  # Pause for 3 seconds to allow the plot to render
 
 # Interpretation helpers
 def interpret_pe(pe_ratio):
