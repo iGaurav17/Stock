@@ -46,41 +46,41 @@ def evaluate_stock(ticker_symbol):
 
 
         # ✅ Add this block: fetch last 5 days history and print
-        history = stock.history(period="30d")
-        if not history.empty:
-            print("\n📅 Last 30 days closing prices:")
-            print(history["Close"])
+        # history = stock.history(period="30d")
+        # if not history.empty:
+        #     print("\n📅 Last 30 days closing prices:")
+        #     print(history["Close"])
 
-            # ✅ Plotting the chart
-            history["Close"].plot(title=f"{ticker.upper()} - Last 5 Days Closing Price", figsize=(10, 4), marker='o')
-            plt.ylabel("Price (INR)")
-            plt.xlabel("Date")
-            plt.grid(True)
-            plt.tight_layout()
-            plt.show(block=False)
-            plt.pause(3)  # Pause for 3 seconds to allow the plot to render
-        else:
-            print("⚠️ No historical price data found.")
+        #     # ✅ Plotting the chart
+        #     history["Close"].plot(title=f"{ticker.upper()} - Last 5 Days Closing Price", figsize=(10, 4), marker='o')
+        #     plt.ylabel("Price (INR)")
+        #     plt.xlabel("Date")
+        #     plt.grid(True)
+        #     plt.tight_layout()
+        #     plt.show(block=False)
+        #     plt.pause(3)  # Pause for 3 seconds to allow the plot to render
+        # else:
+        #     print("⚠️ No historical price data found.")
 
 
-        intraday_data = stock.history(period="1d", interval="1m")  # 1-day data with 5-minute intervals
-        if not intraday_data.empty:
-            print("\n📅 Intraday Price (1-minute intervals):")
-            print(intraday_data[["Close"]].tail())
+        # intraday_data = stock.history(period="1d", interval="1m")  # 1-day data with 5-minute intervals
+        # if not intraday_data.empty:
+        #     print("\n📅 Intraday Price (1-minute intervals):")
+        #     print(intraday_data[["Close"]].tail())
 
-            # Plot intraday price chart
-            plt.figure(figsize=(12, 5))
-            plt.plot(intraday_data.index, intraday_data["Close"], marker='', linestyle='-', color='green')
-            plt.title(f"{ticker.upper()} - Intraday Price Movement (5-minute intervals)")
-            plt.xlabel("Time")
-            plt.ylabel("Price (INR)")
-            plt.xticks(rotation=45)
-            plt.grid(True, linestyle='--', alpha=0.5)
-            plt.tight_layout()
-            plt.show(block=False)
-            plt.pause(3)  # Pause for 3 seconds to allow the plot to render
-        else: 
-            print("⚠️ Intraday price data not available.")
+        #     # Plot intraday price chart
+        #     plt.figure(figsize=(12, 5))
+        #     plt.plot(intraday_data.index, intraday_data["Close"], marker='', linestyle='-', color='green')
+        #     plt.title(f"{ticker.upper()} - Intraday Price Movement (5-minute intervals)")
+        #     plt.xlabel("Time")
+        #     plt.ylabel("Price (INR)")
+        #     plt.xticks(rotation=45)
+        #     plt.grid(True, linestyle='--', alpha=0.5)
+        #     plt.tight_layout()
+        #     plt.show(block=False)
+        #     plt.pause(3)  # Pause for 3 seconds to allow the plot to render
+        # else: 
+        #     print("⚠️ Intraday price data not available.")
 
         # --- Custom Profitability Scoring ---
         score = 50  # Start with a neutral base score
@@ -152,22 +152,52 @@ def show_chart(metrics, ticker):
         print("No data to visualize.")
         return
 
+    stock = yf.Ticker(ticker)
+
+    # Score contribution chart data
     labels = list(metrics.keys())
     values = list(metrics.values())
 
-    plt.figure(figsize=(10, 5))
-    bars = plt.bar(labels, values, color='skyblue', edgecolor='black')
-    plt.title(f"📈 Contribution to Score for {ticker}")
-    plt.ylabel("Score Contribution")
-    plt.grid(axis='y', linestyle='--', alpha=0.6)
+    # Last 5 days historical data
+    history = stock.history(period="30d")  # Fetch last 7 to be safe
+    recent_history = history.tail(30)
 
-    for bar in bars:
-        yval = bar.get_height()
-        plt.text(bar.get_x() + bar.get_width()/2, yval + 0.5, f"{yval}", ha='center', va='bottom')
+    # Intraday chart data
+    intraday_data = stock.history(period="1d", interval="1m")  # Use 5m intervals as mentioned in title
 
+    # Create subplots
+    fig, axs = plt.subplots(3, 1, figsize=(12, 12))
+
+    # 1. Score contribution bar chart
+    axs[0].bar(labels, values, color='skyblue', edgecolor='black')
+    axs[0].set_title(f"📈 Contribution to Score for {ticker}")
+    axs[0].set_ylabel("Score Contribution")
+    axs[0].grid(axis='y', linestyle='--', alpha=0.6)
+
+    # 2. Last 5 days closing price
+    if not recent_history.empty:
+        axs[1].plot(recent_history.index, recent_history["Close"], marker='o')
+        axs[1].set_title(f"{ticker.upper()} - Last 30 Days Closing Price")
+        axs[1].set_ylabel("Price (INR)")
+        axs[1].grid(True)
+    else:
+        axs[1].set_title("No recent history data found")
+        axs[1].axis('off')
+
+    # 3. Intraday chart
+    if not intraday_data.empty:
+        axs[2].plot(intraday_data.index, intraday_data["Close"], color='green')
+        axs[2].set_title(f"{ticker.upper()} - Intraday Price Movement (1-min intervals)")
+        axs[2].set_xlabel("Time")
+        axs[2].set_ylabel("Price (INR)")
+        axs[2].tick_params(axis='x', rotation=45)
+        axs[2].grid(True)
+    else:
+        axs[2].set_title("No intraday data found")
+        axs[2].axis('off')
+
+    plt.tight_layout()
     plt.show()
-    # plt.show(block=False)
-    # plt.pause(3)  # Pause for 3 seconds to allow the plot to render
 
 # Interpretation helpers
 def interpret_pe(pe_ratio):
