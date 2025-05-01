@@ -43,6 +43,23 @@ def evaluate_stock(ticker_symbol):
         print(f"🏦 Debt to Equity    : {debt_equity:.2f}" if debt_equity else "🏦 Debt to Equity    : N/A")
         print(f"   {interpret_debt_equity(debt_equity)}")
 
+
+        # ✅ Add this block: fetch last 5 days history and print
+        history = stock.history(period="5d")
+        if not history.empty:
+            print("\n📅 Last 5 days closing prices:")
+            print(history["Close"])
+
+            # ✅ Plotting the chart
+            history["Close"].plot(title=f"{ticker.upper()} - Last 5 Days Closing Price", figsize=(10, 4), marker='o')
+            plt.ylabel("Price (INR)")
+            plt.xlabel("Date")
+            plt.grid(True)
+            plt.tight_layout()
+            plt.show()
+        else:
+            print("⚠️ No historical price data found.")
+
         # --- Custom Profitability Scoring ---
         score = 50  # Start with a neutral base score
         metric_scores = {}
