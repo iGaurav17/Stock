@@ -5,7 +5,7 @@ from datetime import timedelta
 import matplotlib.pyplot as plt
 import pandas as pd
 from prophet import Prophet
-
+import streamlit as st
 # def predict_with_linear_regression(ticker):
 #     stock = yf.Ticker(ticker)
 #     history = stock.history(period="6mo")
@@ -49,7 +49,7 @@ from prophet import Prophet
 #     plt.grid(True)
 #     plt.legend()
 #     plt.tight_layout()
-#     plt.show()
+#     st.pyplot(plt.gcf())
 def predict_detailed_7day_forecast(ticker):
     stock = yf.Ticker(ticker)
     history = stock.history(period="6mo")
@@ -93,10 +93,10 @@ def predict_detailed_7day_forecast(ticker):
     plt.grid(True)
     plt.tight_layout()
     plt.xticks(rotation=45)
-    plt.show()
+    st.pyplot(plt.gcf())
 def show_chart(metrics, ticker):
     if not metrics:
-        print("No data to visualize.")
+        st.warning("No data to visualize.")
         return
 
     stock = yf.Ticker(ticker)
@@ -108,11 +108,13 @@ def show_chart(metrics, ticker):
 
     fig, axs = plt.subplots(3, 1, figsize=(12, 12))
 
+    # Bar chart
     axs[0].bar(labels, values, color='skyblue', edgecolor='black')
     axs[0].set_title(f"📈 Contribution to Score for {ticker}")
     axs[0].set_ylabel("Score Contribution")
     axs[0].grid(axis='y', linestyle='--', alpha=0.6)
 
+    # 30-day trend
     if not recent_history.empty:
         axs[1].plot(recent_history.index, recent_history["Close"], marker='o')
         axs[1].set_title(f"{ticker.upper()} - Last 30 Days Closing Price")
@@ -122,6 +124,7 @@ def show_chart(metrics, ticker):
         axs[1].set_title("No recent history data found")
         axs[1].axis('off')
 
+    # Intraday data
     if not intraday_data.empty:
         axs[2].plot(intraday_data.index, intraday_data["Close"], color='green')
         axs[2].set_title(f"{ticker.upper()} - Intraday Price Movement")
@@ -131,6 +134,8 @@ def show_chart(metrics, ticker):
         axs[2].set_title("No intraday data found")
         axs[2].axis('off')
 
-    predict_detailed_7day_forecast(ticker)
-    plt.tight_layout()
-    plt.show()
+    fig.tight_layout()
+    st.pyplot(fig)  # ✅ Explicitly show your first figure
+
+    # Then call forecast (which draws its own figure)
+    predict_detailed_7day_forecast(ticker)  # This will have its own plot
