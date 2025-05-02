@@ -1,6 +1,99 @@
+from sklearn.linear_model import LinearRegression
+import numpy as np
 import yfinance as yf
+from datetime import timedelta
 import matplotlib.pyplot as plt
+import pandas as pd
+from prophet import Prophet
 
+# def predict_with_linear_regression(ticker):
+#     stock = yf.Ticker(ticker)
+#     history = stock.history(period="6mo")
+
+#     if history.empty:
+#         print("Not enough data for prediction.")
+#         return
+
+#     df = history.reset_index()[["Date", "Close"]]
+#     df['Date'] = pd.to_datetime(df['Date'])
+#     df['ds'] = df['Date'].map(pd.Timestamp.toordinal)  # Convert dates to ordinal numbers
+#     df['y'] = df['Close']
+
+#     # Prepare training data
+#     X = df['ds'].values.reshape(-1, 1)
+#     y = df['y'].values
+
+#     # Train the model
+#     model = LinearRegression()
+#     model.fit(X, y)
+
+#     # Generate next 7 days
+#     last_date = df['Date'].max()
+#     future_dates = [last_date + timedelta(days=i) for i in range(1, 8)]
+#     future_ordinals = np.array([date.toordinal() for date in future_dates]).reshape(-1, 1)
+#     future_preds = model.predict(future_ordinals)
+
+#     # Combine actual and predicted
+#     all_dates = list(df['Date']) + future_dates
+#     all_prices = list(df['y']) + list(future_preds)
+
+#     # Plot
+#     plt.figure(figsize=(12, 5))
+#     plt.plot(df['Date'], df['y'], label="Historical Prices", marker='o')
+#     plt.plot(future_dates, future_preds, label="Predicted Prices (Next 7 Days)", marker='x', linestyle='--', color='orange')
+#     plt.axvline(x=last_date, linestyle='--', color='gray', label='Prediction Starts')
+#     plt.title(f"📈 Linear Regression Price Forecast for {ticker.upper()} - Next 7 Days")
+#     plt.xlabel("Date")
+#     plt.ylabel("Price (INR)")
+#     plt.xticks(rotation=45)
+#     plt.grid(True)
+#     plt.legend()
+#     plt.tight_layout()
+#     plt.show()
+def predict_detailed_7day_forecast(ticker):
+    stock = yf.Ticker(ticker)
+    history = stock.history(period="6mo")
+
+    if history.empty:
+        print("Not enough historical data.")
+        return
+
+    df = history.reset_index()[["Date", "Close"]]
+    df.rename(columns={"Date": "ds", "Close": "y"}, inplace=True)
+    df['ds'] = df['ds'].dt.tz_localize(None)  # remove timezone
+
+    model = Prophet(daily_seasonality=True, interval_width=0.95)
+    model.fit(df)
+
+    future = model.make_future_dataframe(periods=7)
+    forecast = model.predict(future)
+
+    # Filter next 7 days forecast only
+    last_date = df['ds'].max()
+    future_forecast = forecast[forecast['ds'] > last_date]
+
+    # Plot
+    plt.figure(figsize=(12, 5))
+    plt.plot(df['ds'], df['y'], label="Historical", color="blue")
+    plt.plot(future_forecast['ds'], future_forecast['yhat'], label="Predicted", color="orange", marker='o')
+    plt.fill_between(future_forecast['ds'], future_forecast['yhat_lower'], future_forecast['yhat_upper'], color='orange', alpha=0.2, label="High/Low Range")
+
+    for i in range(len(future_forecast)):
+        ds = future_forecast['ds'].iloc[i].strftime("%b %d")
+        high = round(future_forecast['yhat_upper'].iloc[i], 2)
+        low = round(future_forecast['yhat_lower'].iloc[i], 2)
+        plt.text(future_forecast['ds'].iloc[i], future_forecast['yhat'].iloc[i] + 2, f"H:{high}", color='green', fontsize=9, ha='center')
+        plt.text(future_forecast['ds'].iloc[i], future_forecast['yhat'].iloc[i] - 2, f"L:{low}", color='red', fontsize=9, ha='center')
+
+    plt.axvline(x=last_date, linestyle='--', color='gray', label='Forecast Start')
+    plt.title(f"📈 7-Day Forecast with High/Low Bands for {ticker.upper()}")
+    plt.xlabel("Date")
+    plt.ylabel("Price (INR)")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.xticks(rotation=45)
+    plt.show()
 def show_chart(metrics, ticker):
     if not metrics:
         print("No data to visualize.")
@@ -38,5 +131,6 @@ def show_chart(metrics, ticker):
         axs[2].set_title("No intraday data found")
         axs[2].axis('off')
 
+    predict_detailed_7day_forecast(ticker)
     plt.tight_layout()
     plt.show()

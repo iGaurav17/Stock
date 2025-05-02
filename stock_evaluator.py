@@ -1,6 +1,7 @@
 import yfinance as yf  # Yahoo Finance API to fetch stock data
 from interpreters import *
 from visualizer import show_chart 
+# from visualizer import predict_future_prices
 
 # Function to evaluate a given stock based on financial ratios
 def evaluate_stock(ticker_symbol):
