@@ -7,6 +7,7 @@ from prophet import Prophet
 import streamlit as st
 import plotly.graph_objects as go
 import plotly.express as px
+from ai_commentary import generate_ai_commentary
 
 def predict_detailed_7day_forecast(ticker):
     stock = yf.Ticker(ticker)
@@ -14,7 +15,7 @@ def predict_detailed_7day_forecast(ticker):
 
     if history.empty:
         st.warning("Not enough historical data.")
-        return
+        return None  # Important: return None if no data
 
     df = history.reset_index()[["Date", "Close"]]
     df.rename(columns={"Date": "ds", "Close": "y"}, inplace=True)
@@ -63,6 +64,9 @@ def predict_detailed_7day_forecast(ticker):
     )
 
     st.plotly_chart(fig, use_container_width=True)
+
+    return future_forecast  # ✅ Return forecast for AI commentary
+
 
 def show_chart(metrics, ticker):
     if not metrics:
@@ -114,5 +118,13 @@ def show_chart(metrics, ticker):
     else:
         st.info("No intraday data found.")
 
-    # 4. Forecast
-    predict_detailed_7day_forecast(ticker)
+    # 4. Forecast and get future forecast data
+    future_forecast = predict_detailed_7day_forecast(ticker)
+
+    # 5. AI Commentary
+    if future_forecast is not None:
+        ai_comment = generate_ai_commentary(ticker, future_forecast)
+        st.markdown("### 🧠 AI Commentary")
+        st.success(ai_comment)
+    else:
+        st.info("AI commentary unavailable due to missing forecast.")
