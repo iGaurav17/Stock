@@ -1,10 +1,16 @@
+# ai_commentary.py
+
 import os
-from openai import OpenAI
 from dotenv import load_dotenv
+import google.generativeai as genai
 
 load_dotenv()
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+models = genai.list_models()
+for model in models:
+    print(model.name, model.supported_generation_methods)
 
 def generate_ai_commentary(ticker, future_forecast):
     if future_forecast.empty:
@@ -19,14 +25,8 @@ def generate_ai_commentary(ticker, future_forecast):
     """
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=100,
-            temperature=0.7,
-        )
-        return response.choices[0].message.content.strip()
+        model = genai.GenerativeModel(model_name="models/gemini-1.5-pro")
+        response = model.generate_content(prompt)
+        return response.text.strip()
     except Exception as e:
         return f"❌ Error generating commentary: {str(e)}"
